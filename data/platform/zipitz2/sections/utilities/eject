@@ -1,4 +1,5 @@
 title= eject
 icon=skin:icons/sd.png
-exec=/usr/local/sbin/eject
+exec=/bin/cp
+params=/usr/local/sbin/eject /tmp/eject; /tmp/eject; rm /tmp/eject
 

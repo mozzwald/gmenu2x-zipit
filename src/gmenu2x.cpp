@@ -1223,7 +1223,7 @@ void GMenu2X::main() {
 	while (!quit) {
 //		tickNow = SDL_GetTicks();
 
-		if(bRedraw){
+		if(bRedraw && (SDL_GetAppState() & SDL_APPACTIVE)){
 			//Background
 			sc["bgmain"]->blit(s,0,0);
 
