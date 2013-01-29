@@ -86,6 +86,8 @@ void InputManager::readConfFile(const string &conffile) {
 		else if (name == "shell")			button = BASH_SHELL;
 		else if (name == "eject")			button = EJECT;
 		else if (name == "usbmode")			button = USBMODE;
+		else if (name == "applist")			button = LIST_APPS;
+		else if (name == "delete")			button = DELETE;
 		
 		else {
 			WARNING("InputManager: Ignoring unknown button name \"%s\"\n",

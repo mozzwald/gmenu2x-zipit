@@ -101,12 +101,13 @@ private:
 	unsigned short getBatteryLevel();
 	unsigned short getWiFiLevel();
 	int getOverlayStatus();
+	unsigned short getCPU_speed();
 	
 	int nwifilevel;
 	bool bRedraw;
 	int nOverlayStatus;
 	
-	FILE* batteryHandle, *backlightHandle, *keyboardBacklightHandle;
+	FILE* batteryHandle, *backlightHandle, *keyboardBacklightHandle, *mhzHandle;
 	void browsePath(const std::string &path, std::vector<std::string>* directories, std::vector<std::string>* files);
 	/*!
 	Starts the scanning of the nand and sd filesystems, searching for dge and gpu files and creating the links in 2 dedicated sections.
@@ -239,6 +240,11 @@ public:
 	void wpaConnect(MessageBox* pMsgBox, int& ret);
 	void wifiOff();
 	void wpaAdd(std::string& SSID);
+
+	void onListApps();
+	void switchToApp(std::string& strApp);
+	void stopApp(MessageBox* pMsgBox, int& ret);
+
 	void setUSBmode();
 	void getTime(char* strTime, int len);
  
@@ -289,6 +295,7 @@ public:
 	void drawTopBar(Surface *s=NULL);
 	void drawBottomBar(Surface *s=NULL);
 
+	void drawClock();
 	Menu *menu;
 };
 

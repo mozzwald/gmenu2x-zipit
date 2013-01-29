@@ -176,6 +176,13 @@ int Surface::hline(Sint16 x, Sint16 y, Sint16 w, Uint8 r, Uint8 g, Uint8 b, Uint
 	return hlineRGBA(raw,x,x+w-1,y,r,g,b,a);
 }
 
+int Surface::line(Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
+	return lineRGBA(raw,x1,y1,x2,y2,r,g,b,a);
+}
+
+int Surface::circle(Sint16 xCenter, Sint16 yCenter, Sint16 radius, Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
+	return circleRGBA(raw,xCenter,yCenter,radius,r,g,b,a);
+}
 
 void Surface::clearClipRect() {
 	SDL_SetClipRect(raw,NULL);

@@ -126,6 +126,8 @@ const int CARD_ROOT_LEN = strlen(CARD_ROOT)-1;
 static GMenu2X *app;
 static string gmenu2x_home;
 
+bool bDeleteIt=false;
+
 // Note: Keep this in sync with the enum!
 static const char *colorNames[NUM_COLORS] = {
 	"topBarBg",
@@ -262,6 +264,7 @@ void GMenu2X::init() {
 	batteryHandle = 0;
 	backlightHandle = 0;
 	keyboardBacklightHandle = 0;
+	mhzHandle = 0;
 	
 
 #ifdef PLATFORM_GP2X
@@ -281,6 +284,7 @@ void GMenu2X::init() {
 	keyboardBacklightHandle = fopen("/sys/class/backlight/pwm-backlight.1/brightness", "w+");
 #endif
 
+	mhzHandle = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq", "r");	
 }
 
 void GMenu2X::deinit() {
@@ -295,6 +299,7 @@ void GMenu2X::deinit() {
 	if (batteryHandle) fclose(batteryHandle);
 	if (backlightHandle) fclose(backlightHandle);
 	if (keyboardBacklightHandle) fclose(keyboardBacklightHandle);
+	if (mhzHandle) fclose(mhzHandle);
 #endif
 }
 
@@ -621,6 +626,7 @@ void GMenu2X::setUSBmode(){
 	else
 		strCommand = "echo host >/sys/devices/platform/z2-usb-switch/usb_mode";
 
+	if(sel >= 0)
 	system(strCommand.c_str());
 }
 
@@ -648,7 +654,7 @@ void GMenu2X::wifiAddNetwork() {
 	
 	int sel = listbox(&voices);
 		
-	if(sel != -1)
+	if(sel >= 0)		
 		wpaAdd(scriptOutput[sel]);
 }
 
@@ -668,7 +674,7 @@ void GMenu2X::wpaAdd(string& SSID){
 
 	int sel = listbox(&voices);
 	
-	if(sel == -1) return;
+	if(sel < 0) return;
 	//enter the password
 	if(sel == 3)
 		strCommand = "echo -e \"\nnetwork={\n\tssid=\\\"" + SSID + "\\\"\n\tkey_mgmt=NONE\n}\" >> /etc/wpa.conf";
@@ -725,6 +731,65 @@ void GMenu2X::wifiOff() {
 		
 	return;
 	
+}
+
+
+#define CANCEL_LISTBOX -1000
+//gmenu2x will list the files (according to name) in /tmp/apps 
+//if an item in the list is chosen then look up the pid in proc
+void GMenu2X::onListApps() {
+
+    char line[LINE_BUFSIZE];
+    vector<string> scriptOutput;
+	vector<MenuOption> voices;	
+	
+    FILE* pipe = popen("ls /tmp/apps", "r");
+		if (pipe == NULL) return; 
+
+    while (fgets(line, LINE_BUFSIZE, pipe) != NULL) 
+		scriptOutput.push_back(line);
+    
+	pclose(pipe); 
+	
+	if(scriptOutput.empty()){
+		MessageBox(this,tr["No apps are running."]).exec();
+		return;
+	}
+	
+	for (unsigned int i=0; i<scriptOutput.size(); i++) 
+		voices.push_back(MenuOption(scriptOutput[i], MakeDelegate(this, &GMenu2X::deadLink)));
+	
+	bDeleteIt=false;
+	int sel = listbox(&voices);
+		
+	if(sel == CANCEL_LISTBOX)
+		return;
+//	else if(sel < 0)
+	else if(bDeleteIt){
+		lastSelectorDir = scriptOutput[sel];
+		MessageBox(this,tr["Stopping app..."], "skin:icons/wifi.png", MakeDelegate(this, &GMenu2X::stopApp)).exec();
+//		stopApp(scriptOutput[sel]);
+	}
+	else		
+		switchToApp(scriptOutput[sel]);
+}
+		
+void GMenu2X::switchToApp(string& strApp){
+	//trim leading and trailing spaces
+	strApp.erase(remove_if(strApp.begin(), strApp.end(), ::isspace), strApp.end());
+	SDL_WM_IconifyWindow();	
+	std::string strCommand = "chvt `cat /tmp/vt/" + strApp + "`";
+	
+	system(strCommand.c_str());
+	
+}
+
+void GMenu2X::stopApp(MessageBox* pMsgBox, int& ret){
+	//trim leading and trailing spaces
+	lastSelectorDir.erase(remove_if(lastSelectorDir.begin(), lastSelectorDir.end(), ::isspace), lastSelectorDir.end());
+	std::string strCommand = "stopApp `cat /tmp/apps/" + lastSelectorDir + "`";
+	
+	system(strCommand.c_str());
 }
 
 void GMenu2X::wifiConnect() {
@@ -1216,6 +1281,7 @@ void GMenu2X::main() {
 	int nbattlevel = getBatteryLevel();
 	nwifilevel = getWiFiLevel();
 	nOverlayStatus = getOverlayStatus();
+	int nMHz = getCPU_speed();
 
 	char strTime[20];
 	getTime(strTime, sizeof(strTime));
@@ -1279,7 +1345,7 @@ void GMenu2X::main() {
 			if (menu->selLink()!=NULL) {
 				s->write ( font, menu->selLink()->getDescription(), halfX, resY-19, ASFont::HAlignCenter, ASFont::VAlignBottom );
 				if (menu->selLinkApp()!=NULL) {
-					s->write ( font, menu->selLinkApp()->clockStr(confInt["maxClock"]), cpuX, bottomBarTextY, ASFont::HAlignLeft, ASFont::VAlignMiddle );
+		//			s->write ( font, menu->selLinkApp()->clockStr(confInt["maxClock"]), cpuX, bottomBarTextY, ASFont::HAlignLeft, ASFont::VAlignMiddle );
 					//Manual indicator
 					if (!menu->selLinkApp()->getManual().empty())
 						sc.skinRes("imgs/manual.png")->blit(s,manualX,bottomBarIconY);
@@ -1288,6 +1354,13 @@ void GMenu2X::main() {
 
 			if (ts.available()) {
 				btnContextMenu.paint();
+			}
+			
+			//draw the cpu MHz
+			{
+				char cpuMHz[10];
+				snprintf(cpuMHz, sizeof(cpuMHz), "%dMHz", nMHz); 
+				s->write ( font, cpuMHz, cpuX, bottomBarTextY, ASFont::HAlignLeft, ASFont::VAlignMiddle );
 			}
 			
 			//draw the time
@@ -1416,6 +1489,9 @@ void GMenu2X::main() {
 				case InputManager::WIFI_CONNECT:
 					wifiSetup();
 					break;
+				case InputManager::LIST_APPS:
+					onListApps();
+					break;
 				case InputManager::BASH_SHELL:
 					pLink = menu->getLink(std::string("bash"));
 					if(pLink) pLink->run();
@@ -1527,6 +1603,7 @@ void GMenu2X::main() {
 			
 			nbattlevel = getBatteryLevel();
 			nwifilevel = getWiFiLevel();
+			nMHz = getCPU_speed();
 				
 			getTime(strTime, sizeof(strTime)); 
 				bRedraw =true;
@@ -1886,7 +1963,7 @@ int GMenu2X::listbox(std::vector<MenuOption>* voices){
             case InputManager::CANCEL:
             case InputManager::MENU:
                 close = true;
-				sel=-1;
+				sel=CANCEL_LISTBOX;
                 break;
             case InputManager::UP:
                 sel = std::max(0, sel-1);
@@ -1898,6 +1975,10 @@ int GMenu2X::listbox(std::vector<MenuOption>* voices){
 				voices->at(sel).action();
                 close = true;
                 break;
+			case InputManager::DELETE:
+				bDeleteIt=true;
+				close = true;
+                break;	
             default:
                 break;
         }
@@ -1994,6 +2075,7 @@ void GMenu2X::editLink() {
 	sd.addSetting(new MenuSettingFile(this, ts, tr["Selector Aliases"], tr["File containing a list of aliases for the selector"], &linkSelAliases));
 	sd.addSetting(new MenuSettingBool(this, ts, tr["Wrapper"], tr["Explicitly relaunch GMenu2X after execution"], &menu->selLinkApp()->needsWrapperRef()));
 	sd.addSetting(new MenuSettingBool(this, ts, tr["Don't Leave"], tr["Don't quit GMenu2X when launching this link"], &menu->selLinkApp()->runsInBackgroundRef()));
+	sd.addSetting(new MenuSettingBool(this, ts, tr["Open New VT"], tr["Don't quit GMenu2X when launching this link AND run on a new terminal"], &menu->selLinkApp()->runsOnNewTerm()));
 
 	if (sd.exec() && sd.edited()) {
 		ledOn();
@@ -2333,41 +2415,41 @@ unsigned short GMenu2X::getWiFiLevel() {
 }
 
 unsigned short GMenu2X::getBatteryLevel() {
-#ifdef PLATFORM_GP2X
-/*	if (batteryHandle<=0) return 0;
 
-	if (f200) {
-		MMSP2ADC val;
-		read(batteryHandle, &val, sizeof(MMSP2ADC));
+	if (getPwrState() == AC_POWER)
+		return 6;
+		
+    char line[LINE_BUFSIZE];
+    
+    vector<string> scriptOutput;
+	
+    /* Get a pipe where the output from the scripts comes in */
+    FILE* pipe = popen("/usr/local/bin/battlevel", "r");
+		if (pipe == NULL) return 6;        /* return with exit code indicating error */
+    
+	//	strCommand = "echo -e \"\nnetwork={\n\tssid=\\\"" + SSID + "\\\"\n\tkey_mgmt=WPA-PSK\n\tpsk=\\\"" + id.getInput() + "\\\"\n}\" >> /etc/wpa.conf";
 
-		if (val.batt==0) return 5;
-		if (val.batt==1) return 3;
-		if (val.batt==2) return 1;
-		if (val.batt==3) return 0;
-	} else {
-		int battval = 0;
-		unsigned short cbv, min=900, max=0;
+    /* Read script output from the pipe... for this one there should only be one line */
+    while (fgets(line, LINE_BUFSIZE, pipe) != NULL) {
+//        scriptOutput += line;
+		scriptOutput.push_back(line);
+    }
+	
+	pclose(pipe); /* Close the pipe */
 
-		for (int i = 0; i < BATTERY_READS; i ++) {
-			if ( read(batteryHandle, &cbv, 2) == 2) {
-				battval += cbv;
-				if (cbv>max) max = cbv;
-				if (cbv<min) min = cbv;
-			}
-		}
-
-		battval -= min+max;
-		battval /= BATTERY_READS-2;
-
-		if (battval>=850) return 6;
-		if (battval>780) return 5;
-		if (battval>740) return 4;
-		if (battval>700) return 3;
-		if (battval>690) return 2;
-		if (battval>680) return 1;
-	}*/
-
-#else
+	int volt_val = 0;
+	if(scriptOutput.size())
+		volt_val = atoi(scriptOutput[0].c_str());
+	if 		(volt_val>90) 	return 5;
+	else if (volt_val>70) 	return 4;
+	else if (volt_val>50) 	return 3;
+	else if (volt_val>30) 	return 2;
+	else if (volt_val>1) 	return 1;
+	else 	 					return 0;
+	
+}
+/*
+unsigned short GMenu2X::getBatteryLevel() {
 
 	if (getPwrState() == AC_POWER)
 		return 6;
@@ -2383,7 +2465,16 @@ unsigned short GMenu2X::getBatteryLevel() {
 	else if (volt_val>3650000) 	return 2;
 	else if (volt_val>3550000) 	return 1;
 	else 	 					return 0;
-#endif
+
+}
+*/
+unsigned short GMenu2X::getCPU_speed() {
+	
+	if (!mhzHandle) return '0';
+	int hz = 0;
+	fscanf(mhzHandle, "%d", &hz);
+	rewind(mhzHandle);
+	return hz/1000;
 }
 
 void GMenu2X::setInputSpeed() {
@@ -2430,7 +2521,7 @@ void GMenu2X::applyDefaultTimings() {
 
 void GMenu2X::setClock(unsigned mhz) {
 	mhz = constrain(mhz, cpuFreqMin, confInt["maxClock"]);
-#if defined(PLATFORM_DINGUX) || defined(PLATFORM_NANONOTE) || defined(PLATFORM_ZIPITZ2)
+#if defined(PLATFORM_DINGUX) || defined(PLATFORM_NANONOTE)
 	cpufreq_cpuspeed(mhz);
 #endif
 }
@@ -2574,4 +2665,18 @@ void GMenu2X::drawBottomBar(Surface *s) {
 		bar->blit(s, 0, resY-bar->height());
 	else
 		s->box(0, resY-20, resX, 20, skinConfColors[COLOR_BOTTOM_BAR_BG]);
+}
+
+void GMenu2X::drawClock() {
+/*
+	s->write ( font, strTime, manualX+19*2, bottomBarTextY, ASFont::HAlignLeft, ASFont::VAlignMiddle );
+//	sc.skinRes("imgs/clock.png")->blit( s, manualX+19, bottomBarIconY );
+	int xCenter = manualX+27;//19+16/2
+	int yCenter	= bottomBarIconY + 8;
+	s->circle(xCenter,yCenter,5,255,255,255,130);
+	//hour hand
+	s->line(xCenter,yCenter, hrX, hrY, 255,255,255,130);
+	//min hand
+	s->line(xCenter,yCenter, minX, minY, 255,255,255,130);
+	*/
 }

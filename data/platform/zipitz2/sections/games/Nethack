@@ -1,0 +1,3 @@
+title=Nethack
+icon=skin:icons/nethack.png
+exec=/usr/bin/nethack

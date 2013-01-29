@@ -80,6 +80,8 @@ public:
 	int rectangle(Sint16, Sint16, Sint16, Sint16, RGBAColor);
 	int rectangle(SDL_Rect, RGBAColor);
 	int hline(Sint16, Sint16, Sint16, Uint8, Uint8, Uint8, Uint8);
+	int line(Sint16, Sint16, Sint16, Sint16, Uint8, Uint8, Uint8, Uint8);
+	int circle(Sint16, Sint16, Sint16, Uint8, Uint8, Uint8, Uint8);
 
 private:
 	Surface(SDL_Surface *raw, bool freeWhenDone);

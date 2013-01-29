@@ -1,3 +1,4 @@
 title=htop
 icon=skin:icons/htop.png
-exec=/usr/bin/htop
+exec=/usr/bin/htop.sh
+newTerm=true

@@ -47,6 +47,7 @@ LinkApp::LinkApp(GMenu2X *gmenu2x_, Touchscreen &ts, InputManager &inputMgr_,
 	file = linkfile;
 	wrapper = false;
 	dontleave = false;
+	newTerm = false;
 	setClock(312);
 	selectordir = "";
 	selectorfilter = "";
@@ -80,6 +81,8 @@ LinkApp::LinkApp(GMenu2X *gmenu2x_, Touchscreen &ts, InputManager &inputMgr_,
 			if (value=="true") wrapper = true;
 		} else if (name == "dontleave") {
 			if (value=="true") dontleave = true;
+		} else if (name == "newTerm") {
+			if (value=="true") newTerm = true;
 		} else if (name == "clock") {
 			setClock( atoi(value.c_str()) );
 		} else if (name == "selectordir") {
@@ -170,6 +173,7 @@ bool LinkApp::save() {
 		if (aliasfile!=""      ) f << "selectoraliases=" << aliasfile       << endl;
 		if (wrapper            ) f << "wrapper=true"                        << endl;
 		if (dontleave          ) f << "dontleave=true"                      << endl;
+		if (newTerm            ) f << "newTerm=true"                      	<< endl;
 		f.close();
 		sync();
 		return true;
@@ -327,7 +331,7 @@ void LinkApp::selector(int startSelection, const string &selectorDir) {
 	Selector sel(gmenu2x, this, selectorDir);
 	int selection = sel.exec(startSelection);
 	if (selection!=-1) {
-		gmenu2x->writeTmp(selection, sel.getDir());
+//		gmenu2x->writeTmp(selection, sel.getDir());
 		launch(sel.getFile(), sel.getDir());
 	}
 }
@@ -395,6 +399,10 @@ void LinkApp::launch(const string &selectedFile, const string &selectedDir) {
 	if (wrapper) command += "; sync & cd "+cmdclean(gmenu2x->getExePath())+"; exec ./gmenu2x";
 	if (dontleave) {
 		system(command.c_str());
+	} else if(newTerm){
+		SDL_WM_IconifyWindow();	
+		command = "openvt -s " + command;
+		system(command.c_str());		
 	} else {
 		if (gmenu2x->confInt["saveSelection"] && (
 				gmenu2x->confInt["section"]!=gmenu2x->menu->selSectionIndex()
@@ -416,6 +424,8 @@ void LinkApp::launch(const string &selectedFile, const string &selectedDir) {
 		if (clock() != gmenu2x->confInt["menuClock"]) {
 			gmenu2x->setClock(clock());
 		}
+		
+		remove("/tmp/vt/gmenu2x");
 		gmenu2x->quit();
 
 		/* Make the terminal we're connected to (via stdin/stdout) our

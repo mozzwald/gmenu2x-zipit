@@ -48,6 +48,7 @@ private:
 
 	bool wrapper;
 	bool dontleave;
+	bool newTerm;
 
 	void launch(
 			const std::string &selectedFile = "",
@@ -91,6 +92,7 @@ public:
 	void renameFile(const std::string &name);
 	bool &needsWrapperRef() { return wrapper; }
 	bool &runsInBackgroundRef() { return dontleave; }
+	bool &runsOnNewTerm() { return newTerm; }
 };
 
 #endif
