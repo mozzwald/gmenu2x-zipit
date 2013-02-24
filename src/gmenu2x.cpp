@@ -262,18 +262,18 @@ void GMenu2X::initCPULimits() {
 
 void GMenu2X::init() {
 	batteryHandle = 0;
+	mhzHandle = 0;
+
+#ifdef GMENU2X_BACKLIGHT_CTRL	
 	backlightHandle = 0;
 	keyboardBacklightHandle = 0;
-	mhzHandle = 0;
-	
-
 #ifdef PLATFORM_GP2X
 /*	gp2x_mem = open("/dev/mem", O_RDWR);
 	gp2x_memregs=(unsigned short *)mmap(0, 0x10000, PROT_READ|PROT_WRITE, MAP_SHARED, gp2x_mem, 0xc0000000);
 	MEM_REG=&gp2x_memregs[0];
 	*/
 #else
-	batteryHandle = fopen("/sys/class/power_supply/Z2/voltage_now", "r");
+
 	backlightHandle = fopen(
 #ifdef PLATFORM_NANONOTE
 		"/sys/class/lcd/ili8960-lcd/contrast",
@@ -284,6 +284,9 @@ void GMenu2X::init() {
 	keyboardBacklightHandle = fopen("/sys/class/backlight/pwm-backlight.1/brightness", "w+");
 #endif
 
+#endif //GMENU2X_BACKLIGHT_CTRL
+	
+	batteryHandle = fopen("/sys/class/power_supply/Z2/voltage_now", "r");
 	mhzHandle = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq", "r");	
 }
 
@@ -297,9 +300,13 @@ void GMenu2X::deinit() {
 */
 #else
 	if (batteryHandle) fclose(batteryHandle);
+	if (mhzHandle) fclose(mhzHandle);
+
+#ifdef GMENU2X_BACKLIGHT_CTRL	
 	if (backlightHandle) fclose(backlightHandle);
 	if (keyboardBacklightHandle) fclose(keyboardBacklightHandle);
-	if (mhzHandle) fclose(mhzHandle);
+#endif //GMENU2X_BACKLIGHT_CTRL
+
 #endif
 }
 
@@ -451,8 +458,10 @@ GMenu2X::GMenu2X()
 	initServices();
 	applyDefaultTimings();
 	setClock(confInt["menuClock"]);
+#ifdef GMENU2X_BACKLIGHT_CTRL	
 	setBacklight(confInt["backlight"]);
 	setKbdBacklight(confInt["kbd_backlight"]);
+#endif
 	//recover last session
 	readTmp();
 	if (lastSelectorElement>-1 && menu->selLinkApp()!=NULL && (!menu->selLinkApp()->getSelectorDir().empty() || !lastSelectorDir.empty()))
@@ -1178,6 +1187,8 @@ void GMenu2X::ledOff() {
 #endif
 }
 
+#ifdef GMENU2X_BACKLIGHT_CTRL	
+
 void GMenu2X::setBacklight(int val)
 {
 	if (backlightHandle) {
@@ -1219,6 +1230,8 @@ int GMenu2X::getKbdBackLight()
 	}
 	return val;
 }
+#endif //GMENU2X_BACKLIGHT_CTRL
+
 
 void GMenu2X::getTime(char* strTime, int len)
 {
@@ -1643,8 +1656,10 @@ void GMenu2X::explorer() {
 
 void GMenu2X::options() {
 	int curMenuClock = confInt["menuClock"];
+#ifdef GMENU2X_BACKLIGHT_CTRL	
 	int curBacklight = getBackLight();
 	int curKbdBacklight = getKbdBackLight();
+#endif
 	bool showRootFolder = fileExists(CARD_ROOT);
 
 	FileLister fl_tr(getHome() + "/translations");
@@ -1672,8 +1687,10 @@ void GMenu2X::options() {
 	sd.addSetting(new MenuSettingBool(this, ts, tr["Show root"], tr["Show root folder in the file selection dialogs"], &showRootFolder));
 
 	if (sd.exec() && sd.edited()) {
+#ifdef GMENU2X_BACKLIGHT_CTRL			
 		if (curBacklight != confInt["backlight"]) setBacklight(confInt["backlight"]);
 		if (curKbdBacklight != confInt["kbd_backlight"]) setKbdBacklight(confInt["kbd_backlight"]);
+#endif
 		if (curMenuClock != confInt["menuClock"]) setClock(confInt["menuClock"]);
 
 		if (lang == "English") lang = "";
@@ -2368,7 +2385,7 @@ int GMenu2X::getOverlayStatus() {
 	int status=0;
 	if (fd != NULL) {
 		char buf [5];
-		status = atoi(fgets(buf, sizeof buf, fd));
+		status = atoi(fgets(buf, sizeof(buf), fd));
 		fclose(fd);
 
 		if(status != nOverlayStatus){
