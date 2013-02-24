@@ -1,0 +1,5 @@
+title=blkmp3
+icon=skin:icons/mpg123.png
+exec=/usr/bin/blkmp3
+newTerm=true
+
