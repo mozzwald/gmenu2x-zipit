@@ -13,6 +13,15 @@
 #include <cassert>
 
 
+SDL_Surface *cleanup(SDL_Surface *s,FILE *fp,png_structp *png, png_infop *info)
+{
+	// Clean up.
+	png_destroy_read_struct(png, info, NULL);
+	if (fp) fclose(fp);
+
+	return s;
+ }
+
 SDL_Surface *loadPNG(const std::string &path) {
 	// Declare these with function scope and initialize them to NULL,
 	// so we can use a single cleanup block at the end of the function.
@@ -23,10 +32,10 @@ SDL_Surface *loadPNG(const std::string &path) {
 
 	// Create and initialize the top-level libpng struct.
 	png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (!png) goto cleanup;
+	if (!png) return cleanup(surface, fp, &png, &info);
 	// Create and initialize the image information struct.
 	info = png_create_info_struct(png);
-	if (!info) goto cleanup;
+	if (!info) return cleanup(surface, fp, &png, &info);
 	// Setup error handling for errors detected by libpng.
 	if (setjmp(png_jmpbuf(png))) {
 		// Note: This gets executed when an error occurs.
@@ -34,12 +43,12 @@ SDL_Surface *loadPNG(const std::string &path) {
 			SDL_FreeSurface(surface);
 			surface = NULL;
 		}
-		goto cleanup;
+		return cleanup(surface, fp, &png, &info);
 	}
 
 	// Open input file.
 	fp = fopen(path.c_str(), "rb");
-	if (!fp) goto cleanup;
+	if (!fp) return cleanup(surface, fp, &png, &info);
 	// Set up the input control if you are using standard C streams.
 	png_init_io(png, fp);
 
@@ -82,11 +91,11 @@ SDL_Surface *loadPNG(const std::string &path) {
 	// Refuse to load outrageously large images.
 	if (width > 65536) {
 		WARNING("Refusing to load image because it is too wide\n");
-		goto cleanup;
+		return cleanup(surface, fp, &png, &info);
 	}
 	if (height > 2048) {
 		WARNING("Refusing to load image because it is too high\n");
-		goto cleanup;
+		return cleanup(surface, fp, &png, &info);
 	}
 
 	// Allocate ARGB surface to hold the image.
@@ -96,7 +105,7 @@ SDL_Surface *loadPNG(const std::string &path) {
 		);
 	if (!surface) {
 		// Failed to create surface, probably out of memory.
-		goto cleanup;
+		return cleanup(surface, fp, &png, &info);
 	}
 
 	// Compute row pointers.
