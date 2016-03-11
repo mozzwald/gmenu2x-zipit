@@ -1,11 +1,9 @@
 /***************************************************************************
  *   Copyright (C) 2006 by Massimiliano Torromeo                           *
  *   massimiliano.torromeo@gmail.com                                       *
- *   
-      
-	 Copyright 2012 Mark Majeres (slug_)  mark@engine12.com		 
-
-	                                                                       *
+ *	                                                                   *
+ *   Copyright 2012 Mark Majeres (slug_)  mark@engine12.com                *
+ *	                                                                   *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 2 of the License, or     *
@@ -264,7 +262,7 @@ void GMenu2X::init() {
 	batteryHandle = 0;
 	mhzHandle = 0;
 
-#ifdef GMENU2X_BACKLIGHT_CTRL	
+#ifdef GMENU2X_BACKLIGHT_CTRL
 	backlightHandle = 0;
 	keyboardBacklightHandle = 0;
 #ifdef PLATFORM_GP2X
@@ -278,16 +276,16 @@ void GMenu2X::init() {
 #ifdef PLATFORM_NANONOTE
 		"/sys/class/lcd/ili8960-lcd/contrast",
 #else
-		"/sys/class/backlight/pwm-backlight.0/brightness",
+		"/sys/class/backlight/pxabus:display-backlight/brightness",
 #endif
 		"w+");
-	keyboardBacklightHandle = fopen("/sys/class/backlight/pwm-backlight.1/brightness", "w+");
+	keyboardBacklightHandle = fopen("/sys/class/backlight/pxabus:keyboard-backlight/brightness", "w+");
 #endif
 
 #endif //GMENU2X_BACKLIGHT_CTRL
 	
 	batteryHandle = fopen("/sys/class/power_supply/Z2/voltage_now", "r");
-	mhzHandle = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq", "r");	
+	mhzHandle = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq", "r");
 }
 
 void GMenu2X::deinit() {
@@ -302,7 +300,7 @@ void GMenu2X::deinit() {
 	if (batteryHandle) fclose(batteryHandle);
 	if (mhzHandle) fclose(mhzHandle);
 
-#ifdef GMENU2X_BACKLIGHT_CTRL	
+#ifdef GMENU2X_BACKLIGHT_CTRL
 	if (backlightHandle) fclose(backlightHandle);
 	if (keyboardBacklightHandle) fclose(keyboardBacklightHandle);
 #endif //GMENU2X_BACKLIGHT_CTRL
@@ -426,7 +424,7 @@ GMenu2X::GMenu2X()
 		ERROR("Could not initialize SDL: %s\n", SDL_GetError());
 		quit();
 	}
-	
+
 	s = Surface::openOutputSurface(resX, resY, confInt["videoBpp"]);
 
 	bg = NULL;
@@ -458,7 +456,7 @@ GMenu2X::GMenu2X()
 	initServices();
 	applyDefaultTimings();
 	setClock(confInt["menuClock"]);
-#ifdef GMENU2X_BACKLIGHT_CTRL	
+#ifdef GMENU2X_BACKLIGHT_CTRL
 	setBacklight(confInt["backlight"]);
 	setKbdBacklight(confInt["kbd_backlight"]);
 #endif
@@ -579,7 +577,7 @@ void GMenu2X::initFont() {
 void GMenu2X::initMenu() {
 	//Menu structure handler
 	if(menu) delete menu;
-	
+
 	menu = new Menu(this, ts);
 	for (uint i=0; i<menu->getSections().size(); i++) {
 		//Add virtual links in the applications section
@@ -622,18 +620,18 @@ void GMenu2X::initMenu() {
 
 
 void GMenu2X::setUSBmode(){
-	vector<MenuOption> voices;	
+	vector<MenuOption> voices;
 	string strCommand;
-	
+
 	voices.push_back(MenuOption(tr["Device Mode"], MakeDelegate(this, &GMenu2X::deadLink)));
 	voices.push_back(MenuOption(tr["Host Mode"], MakeDelegate(this, &GMenu2X::deadLink)));
 
-	int sel = listbox(&voices);	
+	int sel = listbox(&voices);
 
 	if(sel == 0)
-		strCommand = "echo device >/sys/devices/platform/z2-usb-switch/usb_mode";
+		strCommand = "echo device >/sys/devices/platform/pxabus/40600000.udc/usb_mode";
 	else
-		strCommand = "echo host >/sys/devices/platform/z2-usb-switch/usb_mode";
+		strCommand = "echo host >/sys/devices/platform/pxabus/40600000.udc/usb_mode";
 
 	if(sel >= 0)
 	system(strCommand.c_str());
@@ -643,87 +641,88 @@ void GMenu2X::wifiAddNetwork() {
 
     char line[LINE_BUFSIZE];
     vector<string> scriptOutput;
-	vector<MenuOption> voices;	
-	
-    FILE* pipe = popen("/usr/local/sbin/wifi-scan wlan0", "r");
-		if (pipe == NULL) return; 
+	vector<MenuOption> voices;
 
-    while (fgets(line, LINE_BUFSIZE, pipe) != NULL) 
+    system("/sbin/ifconfig wlan0 up 2>/dev/null");
+    sleep(1); // wait for interface to be ready
+    FILE* pipe = popen("/usr/sbin/iwlist wlan0 scan | /bin/grep 'ESSID' | /bin/sed 's#.*ESSID:\"##' | /bin/sed 's#\".*##'", "r");
+		if (pipe == NULL) return;
+
+    while (fgets(line, LINE_BUFSIZE, pipe) != NULL)
 		scriptOutput.push_back(line);
-    
-	pclose(pipe); 
+
+	pclose(pipe);
 
 	if(scriptOutput.empty()){
 		MessageBox(this,tr["No Networks were found."],"skin:icons/wifi.png").exec();
 		return;
 	}
-	
-	for (unsigned int i=0; i<scriptOutput.size(); i++) 
+
+	for (unsigned int i=0; i<scriptOutput.size(); i++)
 		voices.push_back(MenuOption(scriptOutput[i], MakeDelegate(this, &GMenu2X::deadLink)));
-	
+
 	int sel = listbox(&voices);
-		
-	if(sel >= 0)		
+
+	if(sel >= 0)
 		wpaAdd(scriptOutput[sel]);
 }
 
 void GMenu2X::wpaAdd(string& SSID){
 	//need to ask for the password type
-	vector<MenuOption> voices;	
+	vector<MenuOption> voices;
 	string strPassword;
 	string strCommand;
-	
+
 	//trim leading and trailing spaces
 	SSID.erase(remove_if(SSID.begin(), SSID.end(), ::isspace), SSID.end());
-	
+
 	voices.push_back(MenuOption(tr["WPA/WPA2"], MakeDelegate(this, &GMenu2X::deadLink)));
 	voices.push_back(MenuOption(tr["Hex WEP Key"], MakeDelegate(this, &GMenu2X::deadLink)));
 	voices.push_back(MenuOption(tr["ASCII WEP Key"], MakeDelegate(this, &GMenu2X::deadLink)));
 	voices.push_back(MenuOption(tr["none/open"], MakeDelegate(this, &GMenu2X::deadLink)));
 
 	int sel = listbox(&voices);
-	
+
 	if(sel < 0) return;
 	//enter the password
 	if(sel == 3)
 		strCommand = "echo -e \"\nnetwork={\n\tssid=\\\"" + SSID + "\\\"\n\tkey_mgmt=NONE\n}\" >> /etc/wpa.conf";
 	else{
 		InputDialog id(this, input, ts, tr["Enter passphrase"],"", tr["Setup"], "skin:icons/wifi.png");
-		if (id.exec() == false) 
+		if (id.exec() == false)
 		return;
 
 		strPassword = id.getInput();
-		
+
 		switch(sel) {
 				case 0:
 					strCommand = "echo -e \"\nnetwork={\n\tssid=\\\"" + SSID + "\\\"\n\tkey_mgmt=WPA-PSK\n\tpsk=\\\"" + strPassword.c_str() + "\\\"\n}\" >> /etc/wpa.conf";
 					break;
 				case 1:
-				case 2:	
+				case 2:
 					strCommand = "echo -e \"\nnetwork={\n\tssid=\\\"" + SSID + "\\\"\n\tkey_mgmt=NONE\n\twep_key0=\\\"" + strPassword.c_str() + "\\\"\n}\" >> /etc/wpa.conf";
 					break;
-	
+
 				default:
 					break;
 			}
 	}
 	
 	system(strCommand.c_str());
-	
+
 //	if(MessageBox(this,tr["Connecting to wireless network..."],"skin:icons/wifi.png", &GMenu2X::wpaConnect).exec() == 1)
 	if(MessageBox(this,tr["Connecting to wireless network..."],"skin:icons/wifi.png", MakeDelegate(this, &GMenu2X::wpaConnect)).exec() == 1)
 		MessageBox(this,tr["Unable to connect with current settings."],"skin:icons/wifi.png").exec();
-		
+
 }
 
 void GMenu2X::wpaConnect(MessageBox* pMsgBox, int& retVal){
-	
-	int ret = system("/usr/local/sbin/wpa-connect wlan0 /etc/wpa.conf");
+	int ret = system("/usr/sbin/wup");
 
 	if(ret == 0){
 		pMsgBox->setText("Connected...");
 		sleep(3);
-		
+
 		nwifilevel = getWiFiLevel();
 		bRedraw=true;
 	}
@@ -732,40 +731,38 @@ void GMenu2X::wpaConnect(MessageBox* pMsgBox, int& retVal){
 }
 
 void GMenu2X::wifiOff() {
-	
-	system("ifconfig wlan0 down");
-	
+	system("/sbin/ifconfig wlan0 down");
+
 	nwifilevel = getWiFiLevel();
 	bRedraw=true;
-		
+
 	return;
-	
 }
 
 
 #define CANCEL_LISTBOX -1000
-//gmenu2x will list the files (according to name) in /tmp/apps 
+//gmenu2x will list the files (according to name) in /tmp/apps
 //if an item in the list is chosen then look up the pid in proc
 void GMenu2X::onListApps() {
 
     char line[LINE_BUFSIZE];
     vector<string> scriptOutput;
-	vector<MenuOption> voices;	
-	
-    FILE* pipe = popen("ls /tmp/apps", "r");
-		if (pipe == NULL) return; 
+	vector<MenuOption> voices;
 
-    while (fgets(line, LINE_BUFSIZE, pipe) != NULL) 
+    FILE* pipe = popen("ls /tmp/apps", "r");
+		if (pipe == NULL) return;
+
+    while (fgets(line, LINE_BUFSIZE, pipe) != NULL)
 		scriptOutput.push_back(line);
-    
-	pclose(pipe); 
-	
+
+	pclose(pipe);
+
 	if(scriptOutput.empty()){
 		MessageBox(this,tr["No apps are running."]).exec();
 		return;
 	}
-	
-	for (unsigned int i=0; i<scriptOutput.size(); i++) 
+
+	for (unsigned int i=0; i<scriptOutput.size(); i++)
 		voices.push_back(MenuOption(scriptOutput[i], MakeDelegate(this, &GMenu2X::deadLink)));
 	
 	bDeleteIt=false;
@@ -779,25 +776,24 @@ void GMenu2X::onListApps() {
 		MessageBox(this,tr["Stopping app..."], "skin:icons/wifi.png", MakeDelegate(this, &GMenu2X::stopApp)).exec();
 //		stopApp(scriptOutput[sel]);
 	}
-	else		
+	else
 		switchToApp(scriptOutput[sel]);
 }
 		
 void GMenu2X::switchToApp(string& strApp){
 	//trim leading and trailing spaces
 	strApp.erase(remove_if(strApp.begin(), strApp.end(), ::isspace), strApp.end());
-	SDL_WM_IconifyWindow();	
+	SDL_WM_IconifyWindow();
 	std::string strCommand = "chvt `cat /tmp/vt/" + strApp + "`";
-	
+
 	system(strCommand.c_str());
-	
 }
 
 void GMenu2X::stopApp(MessageBox* pMsgBox, int& ret){
 	//trim leading and trailing spaces
 	lastSelectorDir.erase(remove_if(lastSelectorDir.begin(), lastSelectorDir.end(), ::isspace), lastSelectorDir.end());
 	std::string strCommand = "stopApp `cat /tmp/apps/" + lastSelectorDir + "`";
-	
+
 	system(strCommand.c_str());
 }
 
@@ -814,34 +810,34 @@ void GMenu2X::wifiSetup() {
 	voices.push_back(MenuOption(tr["Connect"], MakeDelegate(this, &GMenu2X::wifiConnect)));
 	voices.push_back(MenuOption(tr["Add Network"], MakeDelegate(this, &GMenu2X::wifiAddNetwork)));
 	voices.push_back(MenuOption(tr["Turn Off"],    MakeDelegate(this, &GMenu2X::wifiOff)));
-	
+
 	listbox(&voices);
 }
 
 void GMenu2X::ipstatus() {
 
     char line[LINE_BUFSIZE];
-    
+
     vector<string> scriptOutput;
-	
+
     /* Get a pipe where the output from the scripts comes in */
-    FILE* pipe = popen("/usr/local/bin/ipstatus", "r");
+    FILE* pipe = popen(GMENU2X_SYSTEM_DIR "/scripts/ipstatus", "r");
 		if (pipe == NULL) return;        /* return with exit code indicating error */
-    
+
 
     /* Read script output from the pipe line by line */
     while (fgets(line, LINE_BUFSIZE, pipe) != NULL) {
 //        scriptOutput += line;
 		scriptOutput.push_back(line);
     }
-    
+
 	pclose(pipe); /* Close the pipe */
-    
+
 	TextDialog td(this, tr["Network Status"], tr["Displays network status and IP"], "skin:icons/netstatus.png", &scriptOutput);
 	td.exec();
 //	MessageBox mb(this, scriptOutput ,"skin:icons/wifi.png");
 //	mb.exec();
-	
+
 }
 
 void GMenu2X::about() {
@@ -1187,7 +1183,7 @@ void GMenu2X::ledOff() {
 #endif
 }
 
-#ifdef GMENU2X_BACKLIGHT_CTRL	
+#ifdef GMENU2X_BACKLIGHT_CTRL
 
 void GMenu2X::setBacklight(int val)
 {
@@ -1243,12 +1239,12 @@ void GMenu2X::getTime(char* strTime, int len)
 	if(theLocalTime.tm_hour >= 12)
 	{
 		am_pm[0]='P';
-		nHr %=12;	
+		nHr %=12;
 	}
-	
+
 	if(nHr == 0)
 		nHr = 12;
-		
+
 	snprintf(strTime, len, "%2d:%02d %s", nHr, theLocalTime.tm_min, am_pm); 
 }
 			
@@ -1271,7 +1267,7 @@ void GMenu2X::main() {
 //	long tickNow;
 	string batteryIcon;// = "imgs/battery/0.png";
 	string wifiIcon;
-	
+
 	stringstream ss;
 	uint sectionsCoordX = 24;
 	SDL_Rect re = {0,0,0,0};
@@ -1289,7 +1285,7 @@ void GMenu2X::main() {
 
 	if (!fileExists(CARD_ROOT))
 		CARD_ROOT = "/";
-	
+
 	bRedraw = true;
 	int nbattlevel = getBatteryLevel();
 	nwifilevel = getWiFiLevel();
@@ -1298,7 +1294,7 @@ void GMenu2X::main() {
 
 	char strTime[20];
 	getTime(strTime, sizeof(strTime));
-	
+
 	while (!quit) {
 //		tickNow = SDL_GetTicks();
 
@@ -1368,11 +1364,11 @@ void GMenu2X::main() {
 			if (ts.available()) {
 				btnContextMenu.paint();
 			}
-			
+
 			//draw the cpu MHz
 			{
 				char cpuMHz[10];
-				snprintf(cpuMHz, sizeof(cpuMHz), "%dMHz", nMHz); 
+				snprintf(cpuMHz, sizeof(cpuMHz), "%dMHz", nMHz);
 				s->write ( font, cpuMHz, cpuX, bottomBarTextY, ASFont::HAlignLeft, ASFont::VAlignMiddle );
 			}
 			
@@ -1383,13 +1379,13 @@ void GMenu2X::main() {
 			//draw overlayfs icon
 			if(getOverlayStatus() != 0)
 				sc.skinRes("imgs/overlayfs.png")->blit( s, resX-19*2, bottomBarIconY );
-			
+
 			//draw wifi status/signal level
 			if (nwifilevel == 0)
 				wifiIcon = "imgs/wifi/off.png";
 			else {
 				char wifilevel[3];
-				snprintf(wifilevel, sizeof(wifilevel), "%d", nwifilevel); 
+				snprintf(wifilevel, sizeof(wifilevel), "%d", nwifilevel);
 				wifiIcon = "imgs/wifi/"+string(wifilevel)+".png";
 			}
 			sc.skinRes(wifiIcon)->blit( s, resX-19*3, bottomBarIconY );
@@ -1400,7 +1396,7 @@ void GMenu2X::main() {
 				batteryIcon = "imgs/battery/ac.png";
 			else {
 				char battlevel[3];
-				snprintf(battlevel, sizeof(battlevel), "%d", nbattlevel); 
+				snprintf(battlevel, sizeof(battlevel), "%d", nbattlevel);
 				batteryIcon = "imgs/battery/"+string(battlevel)+".png";
 			}
 			sc.skinRes(batteryIcon)->blit( s, resX-19, bottomBarIconY );
@@ -1460,7 +1456,7 @@ void GMenu2X::main() {
 			s->flip();
 			bRedraw = false;
 		}//end bRedraw
-		
+
 		//touchscreen
 		if (ts.available()) {
 			ts.poll();
@@ -1490,11 +1486,11 @@ void GMenu2X::main() {
 		}
 
 		InputManager::ButtonEvent event;
-	
+
 		if (input.pollEvent(&event) && event.state == InputManager::PRESSED)
-		{	
+		{
 			Link* pLink=0;
-			
+
 			switch (event.button) {
 				case InputManager::IPSTATUS:
 					ipstatus();
@@ -1611,20 +1607,20 @@ void GMenu2X::main() {
 			}
 		}
         */
-		
+
 		if(nloops++ > 200){  // about every ten seconds
-			
+
 			nbattlevel = getBatteryLevel();
 			nwifilevel = getWiFiLevel();
 			nMHz = getCPU_speed();
-				
-			getTime(strTime, sizeof(strTime)); 
+
+			getTime(strTime, sizeof(strTime));
 				bRedraw =true;
 			nloops=0;
 		}
-				
+
 		usleep(LOOP_DELAY);
-		
+
 	}
 }
 
@@ -1656,7 +1652,7 @@ void GMenu2X::explorer() {
 
 void GMenu2X::options() {
 	int curMenuClock = confInt["menuClock"];
-#ifdef GMENU2X_BACKLIGHT_CTRL	
+#ifdef GMENU2X_BACKLIGHT_CTRL
 	int curBacklight = getBackLight();
 	int curKbdBacklight = getKbdBackLight();
 #endif
@@ -1995,28 +1991,28 @@ int GMenu2X::listbox(std::vector<MenuOption>* voices){
 			case InputManager::DELETE:
 				bDeleteIt=true;
 				close = true;
-                break;	
+                break;
             default:
                 break;
         }
 	}
-	
+
 	return sel;
-}	
+}
 	
 void GMenu2X::contextMenu() {
 	vector<MenuOption> voices;
-	
+
 	voices.push_back(MenuOption(tr.translate("Add link in $1",menu->selSection().c_str(),NULL), 
 							MakeDelegate(this, &GMenu2X::addLink)));
-	
+
 	LinkApp* app = menu->selLinkApp();
 	if(app){
 		
 		if(fileExists(app->getManual()))
 			voices.push_back(MenuOption(tr.translate("Show manual of $1",menu->selLink()->getTitle().c_str(),NULL), 
 							MakeDelegate(this, &GMenu2X::showManual)));
-	
+
 		voices.push_back(MenuOption(tr.translate("Edit $1",menu->selLink()->getTitle().c_str(),NULL), 
 							MakeDelegate(this, &GMenu2X::editLink)));
 		voices.push_back(MenuOption(tr.translate("Delete $1 link",menu->selLink()->getTitle().c_str(),NULL), 
@@ -2364,18 +2360,18 @@ POWERSTATE getPwrState() {
 
 	POWERSTATE pwrstate=DC_POWER;
 	FILE* acHandle = fopen("/sys/class/power_supply/Z2/status", "r");
-	
+
 	if (acHandle){
 		char acVal[32];
 		memset(acVal, 0, sizeof(acVal));
 		fread(acVal, 1, sizeof(acVal), acHandle);
-	
-		if (strncmp(acVal, "Charging", strlen("Charging")) == 0)
+
+		if (strncmp(acVal, "Charging", strlen("Charging")) == 0 || strncmp(acVal, "Full", strlen("Full")) == 0)
 			pwrstate=AC_POWER;
-			
+
 		fclose(acHandle);
 	}
-	
+
 	return pwrstate;
 }
 
@@ -2400,14 +2396,15 @@ int GMenu2X::getOverlayStatus() {
 unsigned short GMenu2X::getWiFiLevel() {
 
     char line[LINE_BUFSIZE];
-    
+
     vector<string> scriptOutput;
-	
+
     /* Get a pipe where the output from the scripts comes in */
-// 	FILE* pipe = popen("iwconfig wlan0 | sed 's/ /\n/g' |grep Quality|sed 's/Quality=//g'|sed 's/\/70//g'", "r");
-    FILE* pipe = popen("/usr/local/bin/wifisignal", "r");
+//    FILE* pipe = popen("/usr/sbin/iwconfig wlan0 | /bin/sed 's/ /\n/g' | /bin/grep Quality | /bin/sed 's/Quality=//g' | /bin/sed 's/\/70//g'", "r");
+//    FILE* pipe = popen("/usr/local/bin/wifisignal", "r");
+    FILE* pipe = popen("/usr/sbin/iwconfig wlan0 | /bin/grep \"Quality\" | /bin/sed 's#.*ity=##g' | /bin/sed 's#/70.*##g'", "r");
 		if (pipe == NULL) return 6;        /* return with exit code indicating error */
-    
+
 	//	strCommand = "echo -e \"\nnetwork={\n\tssid=\\\"" + SSID + "\\\"\n\tkey_mgmt=WPA-PSK\n\tpsk=\\\"" + id.getInput() + "\\\"\n}\" >> /etc/wpa.conf";
 
     /* Read script output from the pipe... for this one there should only be one line */
@@ -2415,7 +2412,7 @@ unsigned short GMenu2X::getWiFiLevel() {
 //        scriptOutput += line;
 		scriptOutput.push_back(line);
     }
-	
+
 	pclose(pipe); /* Close the pipe */
 
 
@@ -2435,15 +2432,15 @@ unsigned short GMenu2X::getBatteryLevel() {
 
 	if (getPwrState() == AC_POWER)
 		return 6;
-		
+
     char line[LINE_BUFSIZE];
-    
+
     vector<string> scriptOutput;
-	
+
     /* Get a pipe where the output from the scripts comes in */
-    FILE* pipe = popen("/usr/local/bin/battlevel", "r");
+    FILE* pipe = popen("/usr/bin/battlevel", "r");
 		if (pipe == NULL) return 6;        /* return with exit code indicating error */
-    
+
 	//	strCommand = "echo -e \"\nnetwork={\n\tssid=\\\"" + SSID + "\\\"\n\tkey_mgmt=WPA-PSK\n\tpsk=\\\"" + id.getInput() + "\\\"\n}\" >> /etc/wpa.conf";
 
     /* Read script output from the pipe... for this one there should only be one line */
