@@ -1,0 +1,9 @@
+#!/bin/sh
+echo
+iwconfig wlan0 | grep "SID" | sed 's/.*IEEE/\t  IEEE/g'
+iwconfig wlan0 | grep "uality" | sed 's/.\t//g'
+iwconfig wlan0 | grep "ate"
+iwconfig wlan0 | grep "Ad-Hoc" | sed 's/Freq/\n\t  Freq/g' | sed 's/Cell/\n\t  Cell/g'
+ifconfig | grep "inet addr" | sed 's/inet addr/\n\t inet addr/g' | sed 's/Bcast/\n\t Bcast/g' | sed 's/Mask/\n\t Mask/g'
+#ifconfig | grep "inet addr" | sed 's/Bcast/\n\t Bcast/g' | sed 's/Mask/\n\t Mask/g'
+
