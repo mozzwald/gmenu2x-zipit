@@ -1390,10 +1390,11 @@ void GMenu2X::main() {
 			}
 			sc.skinRes(wifiIcon)->blit( s, resX-19*3, bottomBarIconY );
 			
-			
 			//draw the battery status
 			if (nbattlevel == 6)
-				batteryIcon = "imgs/battery/ac.png";
+				batteryIcon = "imgs/battery/ac_chrg.png";
+			else if(nbattlevel == 7)
+				batteryIcon = "imgs/battery/ac_full.png";
 			else {
 				char battlevel[3];
 				snprintf(battlevel, sizeof(battlevel), "%d", nbattlevel);
@@ -2352,7 +2353,8 @@ typedef struct {
 } MMSP2ADC;
 
 enum POWERSTATE {
-		AC_POWER,
+		AC_CHRG,
+		AC_FULL,
 		DC_POWER
 			};
 			
@@ -2366,8 +2368,11 @@ POWERSTATE getPwrState() {
 		memset(acVal, 0, sizeof(acVal));
 		fread(acVal, 1, sizeof(acVal), acHandle);
 
-		if (strncmp(acVal, "Charging", strlen("Charging")) == 0 || strncmp(acVal, "Full", strlen("Full")) == 0)
-			pwrstate=AC_POWER;
+		if (strncmp(acVal, "Charging", strlen("Charging")) == 0)
+			pwrstate=AC_CHRG;
+
+		if (strncmp(acVal, "Full", strlen("Full")) == 0)
+			pwrstate=AC_FULL;
 
 		fclose(acHandle);
 	}
@@ -2430,8 +2435,11 @@ unsigned short GMenu2X::getWiFiLevel() {
 
 unsigned short GMenu2X::getBatteryLevel() {
 
-	if (getPwrState() == AC_POWER)
-		return 6;
+    if (getPwrState() == AC_CHRG)
+	return 6;
+
+   if (getPwrState() == AC_FULL)
+	return 7;
 
     char line[LINE_BUFSIZE];
 
