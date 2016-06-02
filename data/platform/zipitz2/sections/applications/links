@@ -1,5 +1,0 @@
-title=links
-icon=skin:icons/links.png
-exec=/usr/bin/links
-params=-g ~/.links/bookmarks.html
-newTerm=true

@@ -1,5 +1,0 @@
-title=Movies
-icon=skin:icons/mplayer.png
-exec=/usr/bin/mplayer
-clock=512
-wrapper=true

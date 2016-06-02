@@ -1,3 +1,0 @@
-title=minicom
-icon=skin:icons/minicom.png
-exec=/usr/sbin/minicom

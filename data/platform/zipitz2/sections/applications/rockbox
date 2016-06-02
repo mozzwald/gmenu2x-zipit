@@ -1,5 +1,0 @@
-title=Rockbox
-icon=skin:icons/rockbox.png
-exec=/usr/local/bin/rockbox
-params=>/dev/null
-clock=312

@@ -1,5 +1,0 @@
-title=StreamRipper
-icon=skin:icons/streamripper.png
-exec=/usr/local/sbin/streamripper.sh
-newTerm=true
-
