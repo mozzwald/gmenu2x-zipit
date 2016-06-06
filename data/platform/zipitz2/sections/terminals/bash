@@ -1,4 +1,4 @@
 title=bash
 icon=skin:icons/utilities-terminal.png
-exec=/bin/sh
+exec=/bin/bash
 params=--login

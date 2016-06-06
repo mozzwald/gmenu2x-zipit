@@ -1,4 +1,0 @@
-title=nano
-icon=skin:icons/nano.png
-exec=/usr/bin/nano.sh
-newTerm=true
