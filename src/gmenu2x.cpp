@@ -1431,7 +1431,7 @@ void GMenu2X::main() {
 				s->write( font, tr["Esc: Close the current menu or dialog"], 20, 95 );
 				s->write( font, tr["Prev, Next: Change section"], 20, 110 );
 				s->write( font, tr["M: contextual menu "], 20, 140 );     s->write( font, tr["S: settings menu"], 160, 140 );
-				s->write( font, tr["A: ip address/status"], 20, 155 );    s->write( font, tr["B: bash prompt"], 160, 155 );
+				s->write( font, tr["A: ip address/status"], 20, 155 );    s->write( font, tr["B: shell prompt"], 160, 155 );
 				s->write( font, tr["W: wifi menu"], 20, 170 );            s->write( font, tr["U: usb menu"], 160, 170 );
 				s->write( font, tr["E: unmount SD card"], 20, 185);			
 
@@ -1503,7 +1503,7 @@ void GMenu2X::main() {
 					onListApps();
 					break;
 				case InputManager::BASH_SHELL:
-					pLink = menu->getLink(std::string("bash"));
+					pLink = menu->getLink(std::string("ash"));
 					if(pLink) pLink->run();
 					break;
 				case InputManager::EJECT:
