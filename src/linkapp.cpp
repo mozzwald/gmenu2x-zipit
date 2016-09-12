@@ -47,7 +47,7 @@ LinkApp::LinkApp(GMenu2X *gmenu2x_, Touchscreen &ts, InputManager &inputMgr_,
 	file = linkfile;
 	wrapper = false;
 	dontleave = false;
-	newTerm = false;
+	newTerm = true;
 	setClock(312);
 	selectordir = "";
 	selectorfilter = "";
@@ -337,7 +337,10 @@ void LinkApp::selector(int startSelection, const string &selectorDir) {
 }
 
 void LinkApp::launch(const string &selectedFile, const string &selectedDir) {
-	drawRun();
+
+	if(!newTerm)
+		drawRun();
+		
 	save();
 
 	//Set correct working directory
@@ -401,7 +404,7 @@ void LinkApp::launch(const string &selectedFile, const string &selectedDir) {
 		system(command.c_str());
 	} else if(newTerm){
 		SDL_WM_IconifyWindow();	
-		command = "openvt -s " + command;
+		command = "launch " + command;
 		system(command.c_str());		
 	} else {
 		if (gmenu2x->confInt["saveSelection"] && (

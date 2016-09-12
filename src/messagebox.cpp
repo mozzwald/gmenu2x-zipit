@@ -23,7 +23,6 @@
 #include "messagebox.h"
 #include "gmenu2x.h"
 
-#include <unistd.h>
 #include <SDL_gfxPrimitives.h>
 
 using namespace std;

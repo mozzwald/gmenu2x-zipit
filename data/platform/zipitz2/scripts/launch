@@ -1,0 +1,139 @@
+#!/bin/sh
+
+killtree() {
+    local pid=$1
+    local sig=${2-TERM}
+
+    for child in $(pgrep -P ${pid}); do
+        killtree $child $sig
+    done
+    kill -${sig} $pid  2>/dev/null
+
+	[ -d /proc/$pid ] && sleep 1
+}
+
+findTTY(){
+	(while [ ! -d /proc/$1/fd ]; do
+		sleep 1
+	done
+	
+	cd /proc/$1/fd
+
+	local max_tty=0
+	for item in *; do
+		if [ $(($item)) -gt 2 ]; then
+			local tty=$(readlink $item |grep '/dev/tty'|grep -Eo -e "[0-9]|[0-9][0-9]")
+			if [ $tty ] && [ $tty -gt $max_tty ]; then
+				max_tty=$tty
+				echo $max_tty >/tmp/vt/$2
+			fi
+		fi
+	done) &
+
+	local pid=$!
+
+	(sleep 10 && kill -HUP $pid 2>/dev/null) &
+	local watch=$!
+	wait $pid && killtree $watch HUP
+}
+
+onHome(){
+	killall chvt
+
+	currPid=$(cat /tmp/run/gmenu.pid)
+
+	if [ $? -eq 0 ]; then
+		killtree $currPid
+		rm /tmp/run/gmenu.pid /tmp/vt/gmenu2x
+	else
+		local max_tty=$(cat /tmp/vt/gmenu2x)
+
+		if [ -z "$max_tty" ]; then
+			local pid=$(pidof gmenu2x.bin)
+			while [ -z "$pid" ]; do
+				#something has gone wrong and is blocking gmenu2x from
+      			#starting, hopefully the following line(s) will get it going again
+
+				killall -9 chvt z2-shell
+				sleep 1
+
+            	pid=$(pidof gmenu2x.bin)
+	        done
+
+			findTTY $pid gmenu2x
+
+			max_tty=$(cat /tmp/vt/gmenu2x)
+		fi
+		
+		[ "$max_tty" == $(fgconsole) ] || chvt $max_tty
+	fi
+}
+
+
+case "$(basename $0)" in
+
+	app.exec)
+		echo $$ >/tmp/apps/$1
+		exec $2
+		;;
+
+	app.stop)
+		local pid=$1
+
+		[ ! $pid ] && exit
+		
+		kill $pid 2>/dev/null
+
+		(sleep 10 && kill -9 $pid 2>/dev/null) &
+		local watch=$!
+		wait $pid && killtree $watch HUP
+		;;		
+
+	onHome)
+		onHome 2>/dev/null
+		;;
+		
+	launch.d)
+		trap 'rm /tmp/vt/$1; rm /tmp/apps/$1' TERM INT
+	
+		fgconsole >/tmp/vt/$1
+		echo "starting ${1}..."
+
+		if [ -n "$3" ]; then
+			app.exec $1 "$2" 2>/dev/null 
+		else
+			$2
+		fi
+		
+		rm /tmp/apps/$1 /tmp/vt/$1
+
+		[ -n "$3" ] && onHome 2>/dev/null
+		;;
+
+	launch)
+		app=$(basename $1)
+		pid=$(cat /tmp/apps/$app) 2>/dev/null
+
+		if [ ! $pid ]; then
+
+			openvt -s launch.d $app "${*}" 1 2>/dev/null
+
+			while [ ! -f /tmp/apps/$app ]; do
+				sleep 1
+			done
+
+			vt=$(cat /tmp/vt/$app) 2>/dev/null
+			pid=$(cat /tmp/apps/$app) 2>/dev/null
+
+			findTTY $pid $app 2>/dev/null
+
+			[ "$vt" != $(cat /tmp/vt/$app) ] && clear >/dev/tty${vt}
+
+		else
+			vt=$(cat /tmp/vt/$app) 2>/dev/null
+
+			[ -n "$vt" ] && chvt $vt
+		fi
+		;;
+
+esac

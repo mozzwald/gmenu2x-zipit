@@ -643,9 +643,7 @@ void GMenu2X::wifiAddNetwork() {
     vector<string> scriptOutput;
 	vector<MenuOption> voices;
 
-    system("/sbin/ifconfig wlan0 up 2>/dev/null");
-    sleep(1); // wait for interface to be ready
-    FILE* pipe = popen("/usr/sbin/iwlist wlan0 scan | /bin/grep 'ESSID' | /bin/sed 's#.*ESSID:\"##' | /bin/sed 's#\".*##'", "r");
+    FILE* pipe = popen( GMENU2X_SYSTEM_DIR "/scripts/wifi-scan", "r");
 		if (pipe == NULL) return;
 
     while (fgets(line, LINE_BUFSIZE, pipe) != NULL)
@@ -717,7 +715,7 @@ void GMenu2X::wpaAdd(string& SSID){
 }
 
 void GMenu2X::wpaConnect(MessageBox* pMsgBox, int& retVal){
-	int ret = system("/usr/sbin/wup");
+	int ret = system( GMENU2X_SYSTEM_DIR "/scripts/wpa-connect");
 
 	if(ret == 0){
 		pMsgBox->setText("Connected...");
@@ -739,7 +737,6 @@ void GMenu2X::wifiOff() {
 	return;
 }
 
-
 #define CANCEL_LISTBOX -1000
 //gmenu2x will list the files (according to name) in /tmp/apps
 //if an item in the list is chosen then look up the pid in proc
@@ -758,7 +755,9 @@ void GMenu2X::onListApps() {
 	pclose(pipe);
 
 	if(scriptOutput.empty()){
-		MessageBox(this,tr["No apps are running."]).exec();
+		MessageBox mb(this,tr["No apps are running."]);
+		mb.setButton(InputManager::CANCEL, tr["No"]);
+		mb.exec();
 		return;
 	}
 
@@ -792,7 +791,7 @@ void GMenu2X::switchToApp(string& strApp){
 void GMenu2X::stopApp(MessageBox* pMsgBox, int& ret){
 	//trim leading and trailing spaces
 	lastSelectorDir.erase(remove_if(lastSelectorDir.begin(), lastSelectorDir.end(), ::isspace), lastSelectorDir.end());
-	std::string strCommand = "stopApp `cat /tmp/apps/" + lastSelectorDir + "`";
+	std::string strCommand = GMENU2X_SYSTEM_DIR "/scripts/app.stop `cat /tmp/apps/" + lastSelectorDir + "`";
 
 	system(strCommand.c_str());
 }
