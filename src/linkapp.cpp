@@ -47,7 +47,7 @@ LinkApp::LinkApp(GMenu2X *gmenu2x_, Touchscreen &ts, InputManager &inputMgr_,
 	file = linkfile;
 	wrapper = false;
 	dontleave = false;
-	newTerm = true;
+	newTerm = true; // default run app in new vt and keep gmenu2x running
 	setClock(312);
 	selectordir = "";
 	selectorfilter = "";
@@ -82,7 +82,7 @@ LinkApp::LinkApp(GMenu2X *gmenu2x_, Touchscreen &ts, InputManager &inputMgr_,
 		} else if (name == "dontleave") {
 			if (value=="true") dontleave = true;
 		} else if (name == "newTerm") {
-			if (value=="true") newTerm = true;
+			if (value=="false") newTerm = false;
 		} else if (name == "clock") {
 			setClock( atoi(value.c_str()) );
 		} else if (name == "selectordir") {
