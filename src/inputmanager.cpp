@@ -67,28 +67,28 @@ void InputManager::readConfFile(const string &conffile) {
 		line = trim(line.substr(pos+1,line.length()));
 
 		Button button;
-		if (name == "up")            button = UP;
-		else if (name == "down")     button = DOWN;
-		else if (name == "left")     button = LEFT;
-		else if (name == "right")    button = RIGHT;
-		else if (name == "accept")   button = ACCEPT;
-		else if (name == "cancel")   button = CANCEL;
-		else if (name == "altleft")  button = ALTLEFT;
-		else if (name == "altright") button = ALTRIGHT;
-		else if (name == "menu")     button = MENU;
-		else if (name == "settings") button = SETTINGS;
-		else if (name == "volup")    button = VOLUP;
-		else if (name == "voldown")  button = VOLDOWN;
-		else if (name == "power")    button = POWER;
-		else if (name == "lock")     button = LOCK;
-		else if (name == "ipaddress")		button = IPSTATUS;
-		else if (name == "wifi")  			button = WIFI_CONNECT;
-		else if (name == "shell")			button = BASH_SHELL;
-		else if (name == "eject")			button = EJECT;
-		else if (name == "usbmode")			button = USBMODE;
-		else if (name == "applist")			button = LIST_APPS;
-		else if (name == "delete")			button = DELETE;
-		
+		if (name == "up")            	button = UP;
+		else if (name == "down")     	button = DOWN;
+		else if (name == "left")     	button = LEFT;
+		else if (name == "right")    	button = RIGHT;
+		else if (name == "accept")   	button = ACCEPT;
+		else if (name == "cancel")   	button = CANCEL;
+		else if (name == "altleft")  	button = ALTLEFT;
+		else if (name == "altright") 	button = ALTRIGHT;
+		else if (name == "menu")     	button = MENU;
+		else if (name == "settings") 	button = SETTINGS;
+		else if (name == "volup")    	button = VOLUP;
+		else if (name == "voldown")  	button = VOLDOWN;
+		else if (name == "power")    	button = POWER;
+		else if (name == "lock")     	button = LOCK;
+		else if (name == "ipaddress")	button = IPSTATUS;
+		else if (name == "wifi")  		button = WIFI_CONNECT;
+		else if (name == "shell")		button = BASH_SHELL;
+		else if (name == "eject")		button = EJECT;
+		else if (name == "usbmode")		button = USBMODE;
+		else if (name == "applist")		button = LIST_APPS;
+		else if (name == "delete")		button = DELETE;
+		else if (name == "reload")      button = RELOAD_MENU;
 		else {
 			WARNING("InputManager: Ignoring unknown button name \"%s\"\n",
 					name.c_str());
