@@ -30,14 +30,14 @@ BrowseDialog::BrowseDialog(
 	btn->setAction(MakeDelegate(this, &BrowseDialog::directoryEnter));
 	buttonBox.add(btn);
 
-	btn = new IconButton(gmenu2x, ts, "skin:imgs/buttons/start.png", gmenu2x->tr["Confirm"]);
+/*	btn = new IconButton(gmenu2x, ts, "skin:imgs/buttons/start.png", gmenu2x->tr["Confirm"]);
 	btn->setAction(MakeDelegate(this, &BrowseDialog::confirm));
 	buttonBox.add(btn);
 
 	btn = new IconButton(gmenu2x, ts, "skin:imgs/buttons/select.png", gmenu2x->tr["Exit"]);
 	btn->setAction(MakeDelegate(this, &BrowseDialog::quit));
 	buttonBox.add(btn);
-
+*/
 	iconGoUp = gmenu2x->sc.skinRes("imgs/go-up.png");
 	iconFolder = gmenu2x->sc.skinRes("imgs/folder.png");
 	iconFile = gmenu2x->sc.skinRes("imgs/file.png");
@@ -210,12 +210,13 @@ void BrowseDialog::paint()
 	unsigned int i, iY;
 	unsigned int firstElement, lastElement;
 	unsigned int offsetY;
-	Surface *icon;
+	Surface *icon, bg(gmenu2x->bg);
 
-	gmenu2x->bg->blit(gmenu2x->s, 0, 0);
-	drawTitleIcon("icons/explorer.png", true);
-	writeTitle(title);
-	writeSubTitle(subtitle);
+	drawTitleIcon("icons/explorer.png",true,&bg);
+	writeTitle(title,&bg);
+	writeSubTitle(subtitle,&bg);
+	bg.convertToDisplayFormat();
+	bg.blit(gmenu2x->s, 0, 0);
 
 	buttonBox.paint(5);
 
