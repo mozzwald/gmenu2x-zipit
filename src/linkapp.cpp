@@ -78,7 +78,7 @@ LinkApp::LinkApp(GMenu2X *gmenu2x_, Touchscreen &ts, InputManager &inputMgr_,
 		} else if (name == "manual") {
 			manual = value;
 		} else if (name == "wrapper") {
-			if (value=="true") wrapper = true;
+			if (value=="true") wrapper = false; // ignore wrapper setting by setting it to false
 		} else if (name == "dontleave") {
 			if (value=="true") dontleave = true;
 		} else if (name == "newTerm") {
