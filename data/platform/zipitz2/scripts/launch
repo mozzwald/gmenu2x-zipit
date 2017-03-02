@@ -16,7 +16,7 @@ findTTY(){
 	(while [ ! -d /proc/$1/fd ]; do
 		sleep 1
 	done
-	
+
 	cd /proc/$1/fd
 
 	local max_tty=0
@@ -64,7 +64,7 @@ onHome(){
 
 			max_tty=$(cat /tmp/vt/gmenu2x)
 		fi
-		
+
 		[ "$max_tty" == $(fgconsole) ] || chvt $max_tty
 	fi
 }
@@ -81,30 +81,30 @@ case "$(basename $0)" in
 		local pid=$1
 
 		[ ! $pid ] && exit
-		
+
 		kill $pid 2>/dev/null
 
 		(sleep 10 && kill -9 $pid 2>/dev/null) &
 		local watch=$!
 		wait $pid && killtree $watch HUP
-		;;		
+		;;
 
 	onHome)
 		onHome 2>/dev/null
 		;;
-		
+
 	launch.d)
 		trap 'rm /tmp/vt/$1; rm /tmp/apps/$1' TERM INT
-	
+
 		fgconsole >/tmp/vt/$1
 		echo "starting ${1}..."
 
 		if [ -n "$3" ]; then
-			app.exec $1 "$2" 2>/dev/null 
+			app.exec $1 "$2"
 		else
 			$2
 		fi
-		
+
 		rm /tmp/apps/$1 /tmp/vt/$1
 
 		[ -n "$3" ] && onHome 2>/dev/null
