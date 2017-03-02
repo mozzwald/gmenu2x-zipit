@@ -285,7 +285,7 @@ void GMenu2X::init() {
 #endif //GMENU2X_BACKLIGHT_CTRL
 	
 	batteryHandle = fopen("/sys/class/power_supply/Z2/voltage_now", "r");
-	mhzHandle = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq", "r");
+	mhzHandle = fopen("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", "r");
 }
 
 void GMenu2X::deinit() {
