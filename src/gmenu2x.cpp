@@ -283,7 +283,7 @@ void GMenu2X::init() {
 #endif
 
 #endif //GMENU2X_BACKLIGHT_CTRL
-	
+
 	batteryHandle = fopen("/sys/class/power_supply/Z2/voltage_now", "r");
 	mhzHandle = fopen("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", "r");
 }
@@ -471,7 +471,7 @@ GMenu2X::GMenu2X()
 }
 
 GMenu2X::~GMenu2X() {
-		
+
 	quit();
 
 	delete menu;
@@ -705,7 +705,7 @@ void GMenu2X::wpaAdd(string& SSID){
 					break;
 			}
 	}
-	
+
 	system(strCommand.c_str());
 
 //	if(MessageBox(this,tr["Connecting to wireless network..."],"skin:icons/wifi.png", &GMenu2X::wpaConnect).exec() == 1)
@@ -763,10 +763,10 @@ void GMenu2X::onListApps() {
 
 	for (unsigned int i=0; i<scriptOutput.size(); i++)
 		voices.push_back(MenuOption(scriptOutput[i], MakeDelegate(this, &GMenu2X::deadLink)));
-	
+
 	bDeleteIt=false;
 	int sel = listbox(&voices);
-		
+
 	if(sel == CANCEL_LISTBOX)
 		return;
 //	else if(sel < 0)
@@ -778,7 +778,7 @@ void GMenu2X::onListApps() {
 	else
 		switchToApp(scriptOutput[sel]);
 }
-		
+
 void GMenu2X::switchToApp(string& strApp){
 	//trim leading and trailing spaces
 	strApp.erase(remove_if(strApp.begin(), strApp.end(), ::isspace), strApp.end());
@@ -1246,7 +1246,7 @@ void GMenu2X::getTime(char* strTime, int len)
 
 	snprintf(strTime, len, "%2d:%02d %s", nHr, theLocalTime.tm_min, am_pm); 
 }
-			
+
 void GMenu2X::main() {
 	uint linksPerPage = linkColumns*linkRows;
 	int linkSpacingX = (resX-10 - linkColumns*skinConfInt["linkWidth"])/linkColumns;
@@ -1262,7 +1262,7 @@ void GMenu2X::main() {
 #endif
 	uint i;
 	uint nloops=0;
-	
+
 //	long tickNow;
 	string batteryIcon;// = "imgs/battery/0.png";
 	string wifiIcon;
@@ -1370,11 +1370,11 @@ void GMenu2X::main() {
 				snprintf(cpuMHz, sizeof(cpuMHz), "%dMHz", nMHz);
 				s->write ( font, cpuMHz, cpuX, bottomBarTextY, ASFont::HAlignLeft, ASFont::VAlignMiddle );
 			}
-			
+
 			//draw the time
 			s->write ( font, strTime, manualX+19*2, bottomBarTextY, ASFont::HAlignLeft, ASFont::VAlignMiddle );
 			sc.skinRes("imgs/clock.png")->blit( s, manualX+19, bottomBarIconY );
-			
+
 			//draw overlayfs icon
 			if(getOverlayStatus() != 0)
 				sc.skinRes("imgs/overlayfs.png")->blit( s, resX-19*2, bottomBarIconY );
@@ -1388,7 +1388,7 @@ void GMenu2X::main() {
 				wifiIcon = "imgs/wifi/"+string(wifilevel)+".png";
 			}
 			sc.skinRes(wifiIcon)->blit( s, resX-19*3, bottomBarIconY );
-			
+
 			//draw the battery status
 			if (nbattlevel == 6)
 				batteryIcon = "imgs/battery/ac_chrg.png";
@@ -1552,7 +1552,7 @@ void GMenu2X::main() {
 			}
 			bRedraw =true;
 		}
-		
+
         /*
 		while (!input.update())
 			usleep(LOOP_DELAY);
@@ -1685,7 +1685,7 @@ void GMenu2X::options() {
 	sd.addSetting(new MenuSettingBool(this, ts, tr["Show root"], tr["Show root folder in the file selection dialogs"], &showRootFolder));
 
 	if (sd.exec() && sd.edited()) {
-#ifdef GMENU2X_BACKLIGHT_CTRL			
+#ifdef GMENU2X_BACKLIGHT_CTRL
 		if (curBacklight != confInt["backlight"]) setBacklight(confInt["backlight"]);
 		if (curKbdBacklight != confInt["kbd_backlight"]) setKbdBacklight(confInt["kbd_backlight"]);
 #endif
@@ -2001,7 +2001,7 @@ int GMenu2X::listbox(std::vector<MenuOption>* voices){
 
 	return sel;
 }
-	
+
 void GMenu2X::contextMenu() {
 	vector<MenuOption> voices;
 
@@ -2010,7 +2010,7 @@ void GMenu2X::contextMenu() {
 
 	LinkApp* app = menu->selLinkApp();
 	if(app){
-		
+
 		if(fileExists(app->getManual()))
 			voices.push_back(MenuOption(tr.translate("Show manual of $1",menu->selLink()->getTitle().c_str(),NULL), 
 							MakeDelegate(this, &GMenu2X::showManual)));
@@ -2025,7 +2025,7 @@ void GMenu2X::contextMenu() {
 	voices.push_back(MenuOption(tr["Rename section"], MakeDelegate(this, &GMenu2X::renameSection)));
 	voices.push_back(MenuOption(tr["Delete section"], MakeDelegate(this, &GMenu2X::deleteSection)));
 	voices.push_back(MenuOption(tr["Scan for applications and games"], MakeDelegate(this, &GMenu2X::scanner)));
-	
+
 	listbox(&voices);
 }
 
@@ -2358,7 +2358,7 @@ enum POWERSTATE {
 		AC_FULL,
 		DC_POWER
 			};
-			
+
 POWERSTATE getPwrState() {
 
 	POWERSTATE pwrstate=DC_POWER;
@@ -2425,7 +2425,7 @@ unsigned short GMenu2X::getWiFiLevel() {
 	int nWiFi = 0;
 	if(scriptOutput.size())
 		nWiFi = atoi(scriptOutput[0].c_str());
-		
+
 	if 		(nWiFi==0) 	return 0;
 	else if (nWiFi>66) 	return 5;
 	else if (nWiFi>60) 	return 4;
@@ -2457,7 +2457,7 @@ unsigned short GMenu2X::getBatteryLevel() {
 //        scriptOutput += line;
 		scriptOutput.push_back(line);
     }
-	
+
 	pclose(pipe); /* Close the pipe */
 
 	int volt_val = 0;
@@ -2469,19 +2469,19 @@ unsigned short GMenu2X::getBatteryLevel() {
 	else if (volt_val>30) 	return 2;
 	else if (volt_val>1) 	return 1;
 	else 	 					return 0;
-	
+
 }
 /*
 unsigned short GMenu2X::getBatteryLevel() {
 
 	if (getPwrState() == AC_POWER)
 		return 6;
-	
+
 	if (!batteryHandle) return '0';
 	int volt_val = 0;
 	fscanf(batteryHandle, "%d", &volt_val);
 	rewind(batteryHandle);
-	
+
 	if 		(volt_val>4000000) 	return 5;
 	else if (volt_val>3900000) 	return 4;
 	else if (volt_val>3750000) 	return 3;
@@ -2492,7 +2492,7 @@ unsigned short GMenu2X::getBatteryLevel() {
 }
 */
 unsigned short GMenu2X::getCPU_speed() {
-	
+
 	if (!mhzHandle) return '0';
 	int hz = 0;
 	fscanf(mhzHandle, "%d", &hz);
@@ -2601,21 +2601,29 @@ const string &GMenu2X::getExePath() {
 string GMenu2X::getDiskFree(const char *path) {
 	stringstream ss;
 	string df = "";
-	string units = "";
 	struct statvfs b;
-
+	string units = "MB";
+	string tunits = "MB";
 	int ret = statvfs(path, &b);
+
 	if (ret==0) {
 		// Make sure that the multiplication happens in 64 bits.
-		unsigned long long free = ((unsigned long long)b.f_bfree * b.f_bsize) / 1084;
-		if(free>1084)
-			free /= 1084;
+		unsigned long long total = ((unsigned long long)b.f_blocks * b.f_frsize) / 1048576;
+		if ((total == 0) && (statvfs("/", &b) != 0))
+		  return df;
+		total = ((unsigned long long)b.f_blocks * b.f_frsize) / 1048576;
+		unsigned long long free = ((unsigned long long)b.f_bfree * b.f_bsize) / 1024;
+		if(free>2097152) // Anything over 2GB show in GB.
+			{ free /= 1048576; units="GB"; }
+		else if(free>1024) // MB
+			free /= 1024;
 		else
 			units="KB";
-			
-		unsigned long long total =
-			((unsigned long long)b.f_blocks * b.f_frsize) / 1048576;
-		ss << free << units << "/" << total << "MB";
+		if(total>2048) // Anything over 2GB show in GB.
+			{ total /= 1024; tunits="GB"; }
+		if ((units == tunits) || (free == 0))
+		  units = "";
+		ss << free << units << "/" << total << tunits;
 		ss >> df;
 	} else {WARNING("statvfs failed with error '%s'.\n", strerror(errno));}
 	return df;
