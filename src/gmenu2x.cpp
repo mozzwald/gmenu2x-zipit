@@ -1432,7 +1432,7 @@ void GMenu2X::main() {
 				s->write( font, tr["M: contextual menu "], 20, 140 );		s->write( font, tr["S: settings menu"], 160, 140 );
 				s->write( font, tr["A: ip address/status"], 20, 155 );		s->write( font, tr["B: shell prompt"], 160, 155 );
 				s->write( font, tr["W: wifi menu"], 20, 170 );				s->write( font, tr["U: usb menu"], 160, 170 );
-				s->write( font, tr["E: unmount SD card"], 20, 185);			s->write( font, tr["R: reload menu"], 160, 185 );
+				s->write( font, tr[""], 20, 185);			s->write( font, tr["R: reload menu"], 160, 185 );
 
 				s->flip();
 				while (input.waitForPressedButton() != InputManager::CANCEL) {}
@@ -1503,10 +1503,6 @@ void GMenu2X::main() {
 					break;
 				case InputManager::BASH_SHELL:
 					pLink = menu->getLink(std::string("ash"));
-					if(pLink) pLink->run();
-					break;
-				case InputManager::EJECT:
-					pLink = menu->getLink(std::string("eject"));
 					if(pLink) pLink->run();
 					break;
 				case InputManager::USBMODE:

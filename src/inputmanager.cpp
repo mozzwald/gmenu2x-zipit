@@ -84,7 +84,6 @@ void InputManager::readConfFile(const string &conffile) {
 		else if (name == "ipaddress")	button = IPSTATUS;
 		else if (name == "wifi")  		button = WIFI_CONNECT;
 		else if (name == "shell")		button = BASH_SHELL;
-		else if (name == "eject")		button = EJECT;
 		else if (name == "usbmode")		button = USBMODE;
 		else if (name == "applist")		button = LIST_APPS;
 		else if (name == "delete")		button = DELETE;
